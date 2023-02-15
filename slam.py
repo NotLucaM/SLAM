@@ -4,15 +4,15 @@ import random
 import numpy as np
 
 
-def ransac(measurements, N=100, S=10, X=5, C=75):
-    measurements = np.array([measurements])
-    print(measurements)
-    size = len(measurements)
-    if size <= 2 * S:
-        return [], None
-    indexes = [*range(S)]
-    indexes.remove(S // 2)
-    indexes = np.array(indexes)
+def ransac(measurements, N=25, S=15, X=10, C=30):
+    filtered = []
+    for measurement in measurements:
+        if measurement[1] == 0:
+            filtered.append(False)
+        else:
+            filtered.append(True)
+
+    measurements = measurements[filtered]
 
     cartesian = np.array([ptc(xi) for xi in measurements])
 
@@ -22,7 +22,14 @@ def ransac(measurements, N=100, S=10, X=5, C=75):
 
     f = True
 
-    for i in range(N):
+    for _ in range(N):
+        size = len(cartesian)
+        if size <= 2 * S - 1:
+            return lines, ret
+        indexes = [*range(S)]
+        indexes.remove(S // 2)
+        indexes = np.array(indexes)
+
         start = random.randint(S, size - S)
         np.random.shuffle(indexes)
         translated = indexes + np.ones(S - 1) * start
@@ -38,24 +45,25 @@ def ransac(measurements, N=100, S=10, X=5, C=75):
         inter = np.array([0, lsrl[1]])
         filtered = cartesian[abs(np.cross(cartesian - inter, normal)) < X]
 
-        new_lsrl = None
-
         if len(filtered) > C:
             new_lsrl = np.linalg.lstsq(
-                    np.vstack([filtered[0],
-                               np.ones(len(filtered[0]))]).T,
-                    filtered[1], rcond=None)[0]
+                    np.vstack([filtered.T[0],
+                               np.ones(len(filtered.T[0]))]).T,
+                    filtered.T[1], rcond=None)[0]
 
             lines.append(new_lsrl)
 
-        if f and new_lsrl is not None:
-            f = False
-            ret = [
-                [cartesian[start]],
-                sample_data,
-                filtered,
-                lsrl
-            ]
+            if f:
+                f = False
+                ret = [
+                    [cartesian[start]],
+                    sample_data,
+                    filtered,
+                    new_lsrl
+                ]
+
+            filtered = np.logical_not(np.isin(cartesian, filtered).T[0])
+            cartesian = cartesian[filtered]
 
     return lines, ret
 
