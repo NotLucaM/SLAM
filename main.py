@@ -25,35 +25,16 @@ measured_position = np.array([[400, 300], [0]])
 def logic(screen):
     measurements = get_lidar(real_position, noise=2.5)
     show_measurements(screen, measurements, origin=real_position)
-    lines, ret = ransac(measurements)
+    lines, segs, ret = ransac(measurements)
 
-    for line in lines:
+    for seg in segs:
+        position = real_position[0]
         pygame.draw.line(
             screen,
             (100, 255, 0),
-            (0, (line[1] + real_position[0][1]) - line[0] * real_position[0][0]),
-            (width, line[1] + real_position[0][1] + (width - real_position[0][0]) * line[0]),
+            seg[0] + position, seg[1] + position,
             width=3
         )
-
-    # if ret is not None:
-    #     for point in ret[1]:
-    #         pygame.draw.circle(screen, (200, 200, 200), point + real_position[0], 3)
-    #
-    #     for point in ret[2]:
-    #         pygame.draw.circle(screen, (0, 200, 200), point + real_position[0], 1)
-    #
-    #     pygame.draw.circle(screen, (255, 255, 0), ret[0][0] + real_position[0], 5)
-    #
-    #     print(ret[3])
-    #     pygame.draw.line(
-    #         screen,
-    #         (100, 200, 40),
-    #         (real_position[0][1], ret[3][1] + real_position[0][1]),
-    #         (width, ret[3][1] + real_position[0][1] + width * ret[3][0])
-    #     )
-    #
-    #     time.sleep(1)
 
 
 def show_robot(screen, position, color=(0, 0, 0)):
@@ -81,7 +62,7 @@ def main():
         display(screen)
         logic(screen)
         show_robot(screen, real_position)
-        show_robot(screen, measured_position, color=(0, 0, 50))
+        # show_robot(screen, measured_position, color=(0, 0, 50))
         pygame.display.flip()
 
         keys = pygame.key.get_pressed()
